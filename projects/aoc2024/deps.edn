@@ -1,0 +1,4 @@
+{:paths   ["src"]
+ :deps    {maoc/aoc {:local/root "../aoc"}}
+ :aliases {:dev {:extra-paths ["dev" "test"]
+                 :extra-deps  {org.clojure/clojure {:mvn/version "1.12.0"}}}}}
