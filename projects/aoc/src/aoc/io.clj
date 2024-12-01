@@ -39,12 +39,29 @@
                                             (.POST (HttpRequest$BodyPublishers/ofString
                                                      (str "level=" level "&answer=" answer)))
                                             .build)
-                          (HttpResponse$BodyHandlers/ofLines)))]
-    {:headers (into {}
-                (map (fn [[k vs]]
-                       [k (if (next vs)
-                            (vec vs)
-                            (first vs))]))
-                (.map (.headers http-response)))
-     :body    (.body http-response)
-     :status  (.statusCode http-response)}))
+                          (HttpResponse$BodyHandlers/ofLines)))
+        texts (stream-seq! (.body http-response))]
+
+    (cond
+      (some #(string/includes? % "That's not the right answer.")
+        texts)
+      :wrong!
+      (some #(string/includes? % "You gave an answer too recently;")
+        texts)
+      :too-fast!
+      (some #(string/includes? % "That's the right answer!")
+        texts)
+      :right!
+
+      (some #(string/includes? % "You don't seem to be solving the right level.")
+        texts)
+      :already-submitted!
+
+      :else {:headers (into {}
+                        (map (fn [[k vs]]
+                               [k (if (next vs)
+                                    (vec vs)
+                                    (first vs))]))
+                        (.map (.headers http-response)))
+             :body    texts
+             :status  (.statusCode http-response)})))
