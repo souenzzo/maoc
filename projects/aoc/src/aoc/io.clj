@@ -1,19 +1,21 @@
 (ns aoc.io
   (:require [clojure.string :as string])
-  (:import (java.net CookieHandler URI)
-           (java.net.http HttpClient HttpRequest HttpRequest$BodyPublisher HttpRequest$BodyPublishers HttpResponse$BodyHandlers)))
+  (:import (java.net CookieManager URI)
+           (java.net.http HttpClient HttpRequest HttpRequest$BodyPublishers HttpResponse$BodyHandlers)))
 
 (set! *warn-on-reflection* true)
 
 (def *http-client
   (delay
-    (-> (HttpClient/newBuilder)
-      (.cookieHandler (proxy [CookieHandler] []
-                        (put [uri response-headers])
-                        (get [uri request-headers]
-                          (when (some-> uri str (string/starts-with? "https://adventofcode.com/"))
-                            {"Cookie" [(str "session=" (System/getenv "ADVENT_OF_COOKIE"))]}))))
-      (.build))))
+    (let [cookie-handler (CookieManager.)]
+      (.put cookie-handler (URI/create "https://adventofcode.com/")
+        {"Set-Cookie" [(str "session="
+                         (or (System/getenv "ADVENT_OF_COOKIE")
+                           (throw (ex-info "Can't find ADVENT_OF_COOKIE env"
+                                    {}))))]})
+      (-> (HttpClient/newBuilder)
+        (.cookieHandler cookie-handler)
+        (.build)))))
 
 (def input
   (memoize (fn [year day]
