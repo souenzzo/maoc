@@ -48,3 +48,55 @@
   (aoc/answer 2024 1 1 936063)
   (aoc/answer 2024 1 2 23150395))
 
+
+(def example-day2
+  ["7 6 4 2 1"
+   "1 2 7 8 9"
+   "9 7 6 2 1"
+   "1 3 2 4 5"
+   "8 6 4 4 1"
+   "1 3 6 7 9"])
+
+(defn parse-day2
+  [input]
+  (mapv #(mapv parse-long (string/split % #"\s+"))
+    input))
+
+(defn remove-nth
+  ([nth]
+   (keep-indexed (fn [idx el]
+                   (when-not (== idx nth)
+                     el))))
+  ([nth coll]
+   (into []
+     (remove-nth nth)
+     coll)))
+
+
+(defn safe-line?
+  ([x] (safe-line? x 0))
+  ([line retry]
+   (let [diffs (mapv (fn [[a b]]
+                       (- a b))
+                 (partition 2 1 line))
+         safe? (cond
+                 (every? pos? diffs) (every? #(<= 1 (abs %) 3) diffs)
+                 (every? neg? diffs) (every? #(<= 1 (abs %) 3) diffs)
+                 :else false)]
+     (cond
+       safe? true
+       (pos? retry) (some #(safe-line? % (dec retry))
+                      (map-indexed
+                        (fn [idx _]
+                          (remove-nth idx line))
+                        line))
+       :else false))))
+
+
+(comment
+  (count (filter safe-line? (parse-day2 example-day2)))
+  (count (filter safe-line? (parse-day2 (aoc/input 2024 2))))
+  (count (filter #(safe-line? % 1)
+           (parse-day2 example-day2)))
+  (count (filter #(safe-line? % 1)
+           (parse-day2 (aoc/input 2024 2)))))
